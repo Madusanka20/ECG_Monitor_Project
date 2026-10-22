@@ -1,0 +1,9 @@
+../Core/Src/ads1293.c:12:20:cs_low	8	static
+../Core/Src/ads1293.c:17:20:cs_high	8	static
+../Core/Src/ads1293.c:22:23:sign_extend24	24	static
+../Core/Src/ads1293.c:28:6:ADS1293_Init	24	static
+../Core/Src/ads1293.c:81:6:ADS1293_Reset	8	static
+../Core/Src/ads1293.c:89:19:ADS1293_WriteRegister	24	static
+../Core/Src/ads1293.c:99:19:ADS1293_ReadRegister	32	static
+../Core/Src/ads1293.c:112:19:ADS1293_ReadData	56	static
+../Core/Src/ads1293.c:129:19:ADS1293_ReadLoopData	56	static
