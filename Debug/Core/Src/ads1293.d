@@ -24,7 +24,9 @@ Core/Src/ads1293.o: ../Core/Src/ads1293.c ../Core/Inc/ads1293.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_pwr_ex.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_spi.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_spi_ex.h \
- ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_exti.h
+ ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_exti.h \
+ ../BlueNRG-2/Target/hci_tl_interface.h ../Core/Inc/custom_bus.h \
+ ../Core/Inc/custom_conf.h ../Core/Inc/custom_errno.h
 ../Core/Inc/ads1293.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal.h:
@@ -53,3 +55,7 @@ Core/Src/ads1293.o: ../Core/Src/ads1293.c ../Core/Inc/ads1293.h \
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_spi.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_spi_ex.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_exti.h:
+../BlueNRG-2/Target/hci_tl_interface.h:
+../Core/Inc/custom_bus.h:
+../Core/Inc/custom_conf.h:
+../Core/Inc/custom_errno.h:

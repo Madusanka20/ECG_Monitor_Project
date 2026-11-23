@@ -1,0 +1,8 @@
+../Core/Src/ble_ecg.c:74:9:BLE_ECG_IsConnected	4	static
+../Core/Src/ble_ecg.c:79:6:BLE_ECG_PushSample	32	static
+../Core/Src/ble_ecg.c:100:13:Start_Advertising	56	static
+../Core/Src/ble_ecg.c:128:6:BLE_ECG_Init	96	static
+../Core/Src/ble_ecg.c:191:6:BLE_ECG_Process	32	static
+../Core/Src/ble_ecg.c:248:6:hci_le_connection_complete_event	32	static
+../Core/Src/ble_ecg.c:272:6:hci_disconnection_complete_event	16	static
+../Core/Src/ble_ecg.c:287:6:aci_gatt_attribute_modified_event	16	static

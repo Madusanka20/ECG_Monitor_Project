@@ -38,7 +38,12 @@ CPP_DEPS :=
 
 # Every subdirectory with source files must be described here
 SUBDIRS := \
+BlueNRG-2/Target \
 Core/Src \
 Core/Startup \
 Drivers/STM32U5xx_HAL_Driver/Src \
+Middlewares/ST/BlueNRG-2/hci \
+Middlewares/ST/BlueNRG-2/hci/controller \
+Middlewares/ST/BlueNRG-2/hci/hci_tl_patterns/Basic \
+Middlewares/ST/BlueNRG-2/utils \
 
