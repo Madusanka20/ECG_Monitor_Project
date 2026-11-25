@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ECG bench monitor</title>
+<style>
+:root{color-scheme:dark;font:16px/1.5 Inter,system-ui,sans-serif;color:#e8f3ef;background:#0c1817}
+*{box-sizing:border-box}body{margin:0}main{max-width:1180px;margin:auto;padding:clamp(16px,4vw,54px)}
+header,.controls,.metrics,.channel{display:flex;align-items:center;flex-wrap:wrap;gap:14px}
+header{justify-content:space-between}h1{font-size:clamp(1.8rem,4vw,3rem);line-height:1.1;letter-spacing:-.05em;margin:0 0 8px}
+p{margin:0;color:#aec3bc}button,select{font:inherit;border-radius:8px;border:1px solid #3e5c54;padding:.55rem .9rem;color:#ecf8f4;background:#17312a}
+button{background:#9af0c8;color:#102319;font-weight:650;cursor:pointer}button:disabled{opacity:.5;cursor:wait}
+.metrics{margin:24px 0 15px;padding:12px 0;border-block:1px solid #345047;color:#c2d6ce;justify-content:space-between;font-variant-numeric:tabular-nums}
+#status{color:#9af0c8}article{border-bottom:1px solid #345047;padding:13px 0 6px}
+.channel{justify-content:space-between}.channel strong{font-size:1rem}.channel output{font:14px ui-monospace,monospace;color:#a3d9c5}
+canvas{display:block;width:100%;height:118px}footer{margin:16px 0;color:#aac1b9;font-size:.87rem}
+</style></head><body><main>
+<header><div><h1>ECG bench monitor</h1><p>ADS1293 · STM32U575 · BlueNRG-M2SP</p></div>
+<div class="controls"><label>Leads <select id="leads"><option value="3">Measured (3)</option><option value="7">All available (7)</option></select></label>
+<button id="connect">Connect ECG</button></div></header>
+<div class="metrics"><span id="status" role="status">Disconnected</span><span id="rate">0 samples/s received</span><span id="drops">0 missing sample indices</span></div>
+<section id="channels" aria-label="ECG waveforms"></section>
+<footer>Five-second window · 1 s per vertical division · Each trace auto-scales in mV · Gaps indicate missing samples</footer>
+<script src="monitor.js"></script></main></body></html>

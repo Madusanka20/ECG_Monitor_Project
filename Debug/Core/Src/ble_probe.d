@@ -1,5 +1,17 @@
 Core/Src/ble_probe.o: ../Core/Src/ble_probe.c ../Core/Inc/ble_probe.h \
- ../Core/Inc/main.h ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal.h \
+ ../Middlewares/ST/BlueNRG-2/includes/bluenrg1_hci_le.h \
+ ../Middlewares/ST/BlueNRG-2/includes/ble_types.h \
+ ../Middlewares/ST/BlueNRG-2/includes/bluenrg1_types.h \
+ ../Middlewares/ST/BlueNRG-2/includes/compiler.h \
+ ../Middlewares/ST/BlueNRG-2/includes/ble_const.h \
+ ../Middlewares/ST/BlueNRG-2/includes/hci_const.h \
+ ../Middlewares/ST/BlueNRG-2/includes/link_layer.h \
+ ../Middlewares/ST/BlueNRG-2/includes/ble_status.h \
+ ../Middlewares/ST/BlueNRG-2/hci/hci_tl_patterns/Basic/hci_tl.h \
+ ../Core/Inc/hci_tl_interface.h \
+ ../Middlewares/ST/BlueNRG-2/includes/ble_types.h \
+ ../Middlewares/ST/BlueNRG-2/utils/ble_list.h ../Core/Inc/bluenrg_conf.h \
+ ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal.h \
  ../Core/Inc/stm32u5xx_hal_conf.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_rcc.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_def.h \
@@ -25,10 +37,26 @@ Core/Src/ble_probe.o: ../Core/Src/ble_probe.c ../Core/Inc/ble_probe.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_spi.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_spi_ex.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_exti.h \
- ../BlueNRG-2/Target/hci_tl_interface.h ../Core/Inc/custom_bus.h \
- ../Core/Inc/custom_conf.h ../Core/Inc/custom_errno.h
+ ../Middlewares/ST/BlueNRG-2/includes/ble_status.h \
+ ../Middlewares/ST/BlueNRG-2/includes/bluenrg1_hal.h \
+ ../Middlewares/ST/BlueNRG-2/includes/bluenrg1_gap.h \
+ ../Middlewares/ST/BlueNRG-2/includes/link_layer.h \
+ ../Middlewares/ST/BlueNRG-2/includes/bluenrg1_gatt_server.h \
+ ../Middlewares/ST/BlueNRG-2/includes/sm.h
 ../Core/Inc/ble_probe.h:
-../Core/Inc/main.h:
+../Middlewares/ST/BlueNRG-2/includes/bluenrg1_hci_le.h:
+../Middlewares/ST/BlueNRG-2/includes/ble_types.h:
+../Middlewares/ST/BlueNRG-2/includes/bluenrg1_types.h:
+../Middlewares/ST/BlueNRG-2/includes/compiler.h:
+../Middlewares/ST/BlueNRG-2/includes/ble_const.h:
+../Middlewares/ST/BlueNRG-2/includes/hci_const.h:
+../Middlewares/ST/BlueNRG-2/includes/link_layer.h:
+../Middlewares/ST/BlueNRG-2/includes/ble_status.h:
+../Middlewares/ST/BlueNRG-2/hci/hci_tl_patterns/Basic/hci_tl.h:
+../Core/Inc/hci_tl_interface.h:
+../Middlewares/ST/BlueNRG-2/includes/ble_types.h:
+../Middlewares/ST/BlueNRG-2/utils/ble_list.h:
+../Core/Inc/bluenrg_conf.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal.h:
 ../Core/Inc/stm32u5xx_hal_conf.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_rcc.h:
@@ -55,7 +83,9 @@ Core/Src/ble_probe.o: ../Core/Src/ble_probe.c ../Core/Inc/ble_probe.h \
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_spi.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_spi_ex.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_exti.h:
-../BlueNRG-2/Target/hci_tl_interface.h:
-../Core/Inc/custom_bus.h:
-../Core/Inc/custom_conf.h:
-../Core/Inc/custom_errno.h:
+../Middlewares/ST/BlueNRG-2/includes/ble_status.h:
+../Middlewares/ST/BlueNRG-2/includes/bluenrg1_hal.h:
+../Middlewares/ST/BlueNRG-2/includes/bluenrg1_gap.h:
+../Middlewares/ST/BlueNRG-2/includes/link_layer.h:
+../Middlewares/ST/BlueNRG-2/includes/bluenrg1_gatt_server.h:
+../Middlewares/ST/BlueNRG-2/includes/sm.h:

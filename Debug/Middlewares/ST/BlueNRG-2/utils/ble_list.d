@@ -1,11 +1,7 @@
 Middlewares/ST/BlueNRG-2/utils/ble_list.o: \
  ../Middlewares/ST/BlueNRG-2/utils/ble_list.c \
  ../Middlewares/ST/BlueNRG-2/utils/ble_list.h \
- ../BlueNRG-2/Target/ble_list_utils.h \
- ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal.h \
- ../Core/Inc/stm32u5xx_hal_conf.h \
- ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_rcc.h \
- ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_def.h \
+ ../Core/Inc/ble_list_utils.h \
  ../Drivers/CMSIS/Device/ST/STM32U5xx/Include/stm32u5xx.h \
  ../Drivers/CMSIS/Device/ST/STM32U5xx/Include/stm32u575xx.h \
  ../Drivers/CMSIS/Include/core_cm33.h \
@@ -14,6 +10,10 @@ Middlewares/ST/BlueNRG-2/utils/ble_list.o: \
  ../Drivers/CMSIS/Include/cmsis_gcc.h \
  ../Drivers/CMSIS/Include/mpu_armv8.h \
  ../Drivers/CMSIS/Device/ST/STM32U5xx/Include/system_stm32u5xx.h \
+ ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal.h \
+ ../Core/Inc/stm32u5xx_hal_conf.h \
+ ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_rcc.h \
+ ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_def.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_rcc_ex.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_gpio.h \
@@ -29,11 +29,7 @@ Middlewares/ST/BlueNRG-2/utils/ble_list.o: \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_spi_ex.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_exti.h
 ../Middlewares/ST/BlueNRG-2/utils/ble_list.h:
-../BlueNRG-2/Target/ble_list_utils.h:
-../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal.h:
-../Core/Inc/stm32u5xx_hal_conf.h:
-../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_rcc.h:
-../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_def.h:
+../Core/Inc/ble_list_utils.h:
 ../Drivers/CMSIS/Device/ST/STM32U5xx/Include/stm32u5xx.h:
 ../Drivers/CMSIS/Device/ST/STM32U5xx/Include/stm32u575xx.h:
 ../Drivers/CMSIS/Include/core_cm33.h:
@@ -42,6 +38,10 @@ Middlewares/ST/BlueNRG-2/utils/ble_list.o: \
 ../Drivers/CMSIS/Include/cmsis_gcc.h:
 ../Drivers/CMSIS/Include/mpu_armv8.h:
 ../Drivers/CMSIS/Device/ST/STM32U5xx/Include/system_stm32u5xx.h:
+../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal.h:
+../Core/Inc/stm32u5xx_hal_conf.h:
+../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_rcc.h:
+../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_def.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_rcc_ex.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_gpio.h:

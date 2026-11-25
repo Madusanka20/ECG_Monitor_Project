@@ -1,0 +1,13 @@
+../Core/Src/hci_tl_interface.c:51:13:select_module	1
+../Core/Src/hci_tl_interface.c:56:12:irq_high	1
+../Core/Src/hci_tl_interface.c:62:12:wait_irq	3
+../Core/Src/hci_tl_interface.c:77:17:read_u16_le	1
+../Core/Src/hci_tl_interface.c:82:12:header	3
+../Core/Src/hci_tl_interface.c:102:16:bus_init	2
+../Core/Src/hci_tl_interface.c:118:16:reset_module	4
+../Core/Src/hci_tl_interface.c:153:16:receive	13
+../Core/Src/hci_tl_interface.c:224:16:write_attempt	8
+../Core/Src/hci_tl_interface.c:272:16:send	9
+../Core/Src/hci_tl_interface.c:324:6:hci_tl_lowlevel_init	1
+../Core/Src/hci_tl_interface.c:337:6:hci_tl_lowlevel_isr	6
+../Core/Src/hci_tl_interface.c:348:6:BLE_TransportPoll	3

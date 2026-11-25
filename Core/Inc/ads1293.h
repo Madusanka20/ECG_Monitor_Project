@@ -36,7 +36,7 @@ extern "C" {
 #define ADS1293_REG_R3_RATE2      0x23
 #define ADS1293_REG_R3_RATE3      0x24
 #define ADS1293_REG_DRDYB_SRC     0x27
-#define ADS1293_REG_SYNCOUTB_SRC  0x29
+#define ADS1293_REG_MASK_DRDYB  0x29
 #define ADS1293_REG_CH_CNFG       0x2F
 #define ADS1293_REG_DATA_STATUS   0x30
 #define ADS1293_REG_DATA_CH1_ECG  0x37
@@ -55,7 +55,7 @@ extern volatile uint8_t debug_29;
 extern volatile uint8_t debug_status;
 
 /* ---- API ---- */
-void              ADS1293_Init(SPI_HandleTypeDef *hspi);
+HAL_StatusTypeDef ADS1293_Init(SPI_HandleTypeDef *hspi);
 void              ADS1293_Reset(void);
 HAL_StatusTypeDef ADS1293_WriteRegister(uint8_t reg, uint8_t data);
 HAL_StatusTypeDef ADS1293_ReadRegister(uint8_t reg, uint8_t *data);

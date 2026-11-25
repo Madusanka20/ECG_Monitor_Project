@@ -6,8 +6,9 @@ Middlewares/ST/BlueNRG-2/hci/hci_tl_patterns/Basic/hci_tl.o: \
  ../Middlewares/ST/BlueNRG-2/includes/ble_types.h \
  ../Middlewares/ST/BlueNRG-2/includes/ble_status.h \
  ../Middlewares/ST/BlueNRG-2/hci/hci_tl_patterns/Basic/hci_tl.h \
- ../BlueNRG-2/Target/hci_tl_interface.h ../Core/Inc/custom_bus.h \
- ../Core/Inc/custom_conf.h \
+ ../Core/Inc/hci_tl_interface.h \
+ ../Middlewares/ST/BlueNRG-2/includes/ble_types.h \
+ ../Middlewares/ST/BlueNRG-2/utils/ble_list.h ../Core/Inc/bluenrg_conf.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal.h \
  ../Core/Inc/stm32u5xx_hal_conf.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_rcc.h \
@@ -34,10 +35,6 @@ Middlewares/ST/BlueNRG-2/hci/hci_tl_patterns/Basic/hci_tl.o: \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_spi.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_spi_ex.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_exti.h \
- ../Core/Inc/custom_errno.h \
- ../Middlewares/ST/BlueNRG-2/includes/ble_types.h \
- ../Middlewares/ST/BlueNRG-2/utils/ble_list.h \
- ../BlueNRG-2/Target/bluenrg_conf.h \
  ../Middlewares/ST/BlueNRG-2/includes/hci.h \
  ../Middlewares/ST/BlueNRG-2/includes/bluenrg1_types.h \
  ../Middlewares/ST/BlueNRG-2/includes/ble_const.h \
@@ -55,9 +52,10 @@ Middlewares/ST/BlueNRG-2/hci/hci_tl_patterns/Basic/hci_tl.o: \
 ../Middlewares/ST/BlueNRG-2/includes/ble_types.h:
 ../Middlewares/ST/BlueNRG-2/includes/ble_status.h:
 ../Middlewares/ST/BlueNRG-2/hci/hci_tl_patterns/Basic/hci_tl.h:
-../BlueNRG-2/Target/hci_tl_interface.h:
-../Core/Inc/custom_bus.h:
-../Core/Inc/custom_conf.h:
+../Core/Inc/hci_tl_interface.h:
+../Middlewares/ST/BlueNRG-2/includes/ble_types.h:
+../Middlewares/ST/BlueNRG-2/utils/ble_list.h:
+../Core/Inc/bluenrg_conf.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal.h:
 ../Core/Inc/stm32u5xx_hal_conf.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_rcc.h:
@@ -84,10 +82,6 @@ Middlewares/ST/BlueNRG-2/hci/hci_tl_patterns/Basic/hci_tl.o: \
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_spi.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_spi_ex.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_exti.h:
-../Core/Inc/custom_errno.h:
-../Middlewares/ST/BlueNRG-2/includes/ble_types.h:
-../Middlewares/ST/BlueNRG-2/utils/ble_list.h:
-../BlueNRG-2/Target/bluenrg_conf.h:
 ../Middlewares/ST/BlueNRG-2/includes/hci.h:
 ../Middlewares/ST/BlueNRG-2/includes/bluenrg1_types.h:
 ../Middlewares/ST/BlueNRG-2/includes/ble_const.h:

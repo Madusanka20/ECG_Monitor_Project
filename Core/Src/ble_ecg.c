@@ -1,312 +1,207 @@
+#include "main.h"
 #include "ble_ecg.h"
-
-#if BLE_ECG_ENABLED
-
-#include <string.h>
+#include "ble_probe.h"
 #include "hci.h"
 #include "hci_tl.h"
 #include "bluenrg1_aci.h"
 #include "bluenrg1_hci_le.h"
-#include "bluenrg1_events.h"
+#include <string.h>
 
-/* ---- Ring Buffer & Packet Configuration ---- */
-#define BLE_RING_SIZE           512U   /* Must be power of 2 */
-#define SAMPLES_PER_PACKET      10U    /* 10 samples * 12 bytes + 4-byte header = 124 bytes */
-#define PACKET_HEADER_BYTES     4U
-#define SAMPLE_BYTES            12U    /* 3 x int32_t */
-#define ECG_PACKET_SIZE         (PACKET_HEADER_BYTES + (SAMPLES_PER_PACKET * SAMPLE_BYTES))
+#define QUEUE_SIZE 512U
+#define QUEUE_MASK (QUEUE_SIZE - 1U)
+#define DISCONNECTED 0xFFFFU
 
-/* ---- Custom 128-bit UUIDs (Little-Endian byte order for BlueNRG ACI) ----
- * Service UUID:        12340000-1234-5678-9abc-def012345678
- * ECG Stream Char:     12340001-1234-5678-9abc-def012345678
- */
-static const uint8_t ECG_SERVICE_UUID[16] = {
-    0x78,0x56,0x34,0x12, 0xf0,0xde, 0xbc,0x9a,
-    0x78,0x56, 0x34,0x12, 0x00,0x00, 0x34,0x12
+static const uint8_t service_uuid[16] = {
+    0x78,0x56,0x34,0x12,0xF0,0xDE,0xBC,0x9A,0x78,0x56,0x34,0x12,0,0,0x34,0x12
 };
+typedef struct {
+    uint32_t index;
+    int32_t channels[3];
+} sample_t;
 
-static const uint8_t ECG_CHAR_UUID[16] = {
-    0x78,0x56,0x34,0x12, 0xf0,0xde, 0xbc,0x9a,
-    0x78,0x56, 0x34,0x12, 0x01,0x00, 0x34,0x12
-};
+static sample_t queue[QUEUE_SIZE];
+static volatile uint32_t head, tail;
+static uint16_t service, characteristic;
+static uint8_t stack_ready, advertise_pending, interval_pending;
+static uint32_t last_adv_attempt, tx_attempt;
+static uint8_t tx_delayed;
+static volatile uint32_t index_offset;
+volatile uint16_t ble_connection = DISCONNECTED;
+volatile uint8_t ble_subscribed, ble_init_step, ble_init_err, ble_last_tx_status;
+volatile uint32_t ble_pkts_sent, ble_queue_drops, ble_tx_retries, ble_tx_drops;
 
-typedef struct __attribute__((packed))
+static uint16_t u16(const uint8_t *p)
 {
-    int32_t lead_I;
-    int32_t lead_II;
-    int32_t v1;
-} ble_ecg_sample_t;
+    return (uint16_t)(p[0] | ((uint16_t)p[1] << 8));
+}
 
-typedef struct __attribute__((packed))
+static void set_subscription(uint8_t enabled)
 {
-    uint16_t         seq;
-    uint8_t          count;
-    uint8_t          reserved;
-    ble_ecg_sample_t samples[SAMPLES_PER_PACKET];
-} ble_ecg_packet_t;
+    uint32_t mask = __get_PRIMASK();
+    __disable_irq();
+    tail = head;
+    ble_subscribed = enabled;
+    __set_PRIMASK(mask);
+    tx_delayed = 0;
+}
 
-/* Ring buffer state */
-static ble_ecg_sample_t ring_buf[BLE_RING_SIZE];
-static volatile uint32_t ring_head = 0;
-static volatile uint32_t ring_tail = 0;
-
-/* BLE stack & GATT handles */
-static uint16_t service_handle   = 0;
-static uint16_t ecg_char_handle  = 0;
-static volatile uint16_t conn_handle     = 0xFFFF;
-static volatile uint8_t  notify_enabled  = 0;
-static volatile uint8_t  adv_active      = 0;
-
-/* Packetizer & flow control */
-static ble_ecg_packet_t tx_pkt;
-static uint8_t          tx_pkt_ready = 0;
-static uint16_t         pkt_seq      = 0;
-
-/* Debug counters (watch in STM32CubeIDE Live Expressions) */
-volatile uint32_t   ble_pkts_sent    = 0;
-volatile uint32_t   ble_pkts_dropped = 0;
-volatile uint32_t   ble_tx_retries   = 0;
-volatile uint8_t    ble_init_step    = 0;
-volatile tBleStatus ble_init_err     = 0;
-
-static void Start_Advertising(void);
+static void on_event(void *data)
+{
+    const uint8_t *p = data;
+    if (!p || p[0] != 0x04) return;
+    uint8_t event = p[1], length = p[2];
+    const uint8_t *v = p + 3;
+    if (event == 0x3E && length >= 4 && (v[0] == 1 || v[0] == 10) && v[1] == 0)
+    {
+        ble_connection = u16(v + 2);
+        set_subscription(0);
+        interval_pending = 1;
+        advertise_pending = 0;
+    }
+    else if (event == 0x05 && length >= 4 && v[0] == 0 && u16(v+1) == ble_connection)
+    {
+        ble_connection = DISCONNECTED;
+        set_subscription(0);
+        interval_pending = 0;
+        advertise_pending = 1;
+    }
+    else if (event == 0xFF && length >= 12 && u16(v) == 0x0C01 &&
+             ble_connection != DISCONNECTED && u16(v+2) == ble_connection &&
+             u16(v+4) == characteristic + 2U && u16(v+6) == 0 && u16(v+8) == 2)
+    {
+        set_subscription((uint8_t)(u16(v+10) & 1U));
+    }
+}
 
 uint8_t BLE_ECG_IsConnected(void)
 {
-    return (conn_handle != 0xFFFF) ? 1U : 0U;
+    return ble_connection != DISCONNECTED;
 }
 
-void BLE_ECG_PushSample(int32_t lead_I, int32_t lead_II, int32_t v1)
+void BLE_ECG_PushSample(uint32_t index, int32_t i, int32_t ii, int32_t v)
 {
-    if (!notify_enabled)
+    if (!ble_subscribed) return;
+    uint32_t next = (head + 1U) & QUEUE_MASK;
+    if (next == tail)
     {
+        ble_queue_drops++;
         return;
     }
-
-    uint32_t next_head = (ring_head + 1U) & (BLE_RING_SIZE - 1U);
-    if (next_head == ring_tail)
-    {
-        /* Ring buffer full: drop oldest sample to keep real-time stream fresh */
-        ring_tail = (ring_tail + 1U) & (BLE_RING_SIZE - 1U);
-        ble_pkts_dropped++;
-    }
-
-    ring_buf[ring_head].lead_I  = lead_I;
-    ring_buf[ring_head].lead_II = lead_II;
-    ring_buf[ring_head].v1      = v1;
-    ring_head = next_head;
+    queue[head] = (sample_t){index + index_offset, {i, ii, v}};
+    __DMB();
+    head = next;
 }
 
-static void Start_Advertising(void)
+void BLE_ECG_MarkGap(void)
 {
-    const char local_name[] = {
-        AD_TYPE_COMPLETE_LOCAL_NAME,
-        'S','T','M','3','2','-','E','C','G'
-    };
+    index_offset++;
+}
 
-    hci_le_set_scan_response_data(0, NULL);
-
-    ble_init_step = 7;
-    tBleStatus ret = aci_gap_set_discoverable(
-        ADV_IND,
-        0x0020, 0x0040,           /* 20 ms - 40 ms advertising interval */
-        STATIC_RANDOM_ADDR,       /* Works even if OTP public MAC is unprogrammed */
-        NO_WHITE_LIST_USE,
-        sizeof(local_name), (uint8_t *)local_name,
-        0, NULL,
-        0x0006, 0x000C            /* Preferred conn interval: 7.5 ms - 15 ms */
-    );
-
-    ble_init_err = ret;
-    if (ret == BLE_STATUS_SUCCESS)
-    {
-        ble_init_step = 8;
-        adv_active = 1U;
-    }
+static uint8_t advertise(void)
+{
+    uint8_t name[] = {AD_TYPE_COMPLETE_LOCAL_NAME,'S','T','M','3','2','-','E','C','G'};
+    last_adv_attempt = HAL_GetTick();
+    return aci_gap_set_discoverable(ADV_IND, 0x30, 0x60, STATIC_RANDOM_ADDR,
+                                    NO_WHITE_LIST_USE, sizeof(name), name, 0, NULL, 6, 12);
 }
 
 void BLE_ECG_Init(void)
 {
-    /* Top 2 MSBs must be '11' (0xC0..0xFF) for a valid BLE Static Random Address */
-    uint8_t bdaddr[6] = {0x12, 0x34, 0x56, 0x78, 0x9A, 0xDE};
-    uint16_t gap_service_handle, gap_dev_name_handle, gap_appearance_handle;
-    Service_UUID_t srv_uuid;
-    Char_UUID_t chr_uuid;
-    tBleStatus ret;
+    uint16_t gap, name, appearance;
+    Service_UUID_t su;
+    Char_UUID_t cu;
+    memcpy(su.Service_UUID_128, service_uuid, 16);
+    memcpy(cu.Char_UUID_128, service_uuid, 16);
+    cu.Char_UUID_128[12] = 1;
 
     ble_init_step = 1;
-    hci_init(NULL, NULL);
-    hci_reset();
+    hci_init(on_event, NULL);
+    ble_init_err = hci_reset();
+    if (ble_init_err) return;
+    HAL_Delay(2000);
+    BLE_TransportPoll();
+    hci_user_evt_proc();
 
-    /* Drain the BlueNRG boot event (EVT_BLUE_INITIALIZED) before sending ACI commands */
-    uint32_t t0 = HAL_GetTick();
-    while ((HAL_GetTick() - t0) < 150U)
-    {
-        hci_user_evt_proc();
-    }
-
+    BLE_Probe();
+    if (!ble_probe_ok) { ble_init_err = ble_probe_status; return; }
     ble_init_step = 2;
-    ret = hci_le_set_random_address(bdaddr);
-    if (ret != BLE_STATUS_SUCCESS) { ble_init_err = ret; return; }
-    /* TX power: +4 dBm */
-    aci_hal_set_tx_power_level(1, 0x06);
-
+    ble_init_err = aci_gatt_init();
+    if (ble_init_err) return;
     ble_init_step = 3;
-    ret = aci_gatt_init();
-    if (ret != BLE_STATUS_SUCCESS) { ble_init_err = ret; return; }
-
+    ble_init_err = aci_gap_init(GAP_PERIPHERAL_ROLE, 0, 9, &gap, &name, &appearance);
+    if (ble_init_err) return;
     ble_init_step = 4;
-    ret = aci_gap_init(GAP_PERIPHERAL_ROLE, 0x00, 0x09,
-                       &gap_service_handle, &gap_dev_name_handle, &gap_appearance_handle);
-    if (ret != BLE_STATUS_SUCCESS) { ble_init_err = ret; return; }
-
-    /* Set GAP Device Name characteristic to match "STM32-ECG" */
-    aci_gatt_update_char_value(gap_service_handle, gap_dev_name_handle,
-                               0, 9, (uint8_t *)"STM32-ECG");
-
-    /* Add Custom ECG Service */
+    uint8_t device_name[] = "STM32-ECG";
+    ble_init_err = aci_gatt_update_char_value(gap, name, 0, sizeof(device_name)-1, device_name);
+    if (ble_init_err) return;
     ble_init_step = 5;
-    memcpy(srv_uuid.Service_UUID_128, ECG_SERVICE_UUID, 16);
-    ret = aci_gatt_add_service(UUID_TYPE_128, &srv_uuid, PRIMARY_SERVICE, 6, &service_handle);
-    if (ret != BLE_STATUS_SUCCESS) { ble_init_err = ret; return; }
-
-    /* Add ECG Stream Characteristic (Notify, up to 124 bytes) */
+    ble_init_err = aci_gatt_add_service(UUID_TYPE_128, &su, PRIMARY_SERVICE, 4, &service);
+    if (ble_init_err) return;
     ble_init_step = 6;
-    memcpy(chr_uuid.Char_UUID_128, ECG_CHAR_UUID, 16);
-    ret = aci_gatt_add_char(service_handle,
-                            UUID_TYPE_128,
-                            &chr_uuid,
-                            ECG_PACKET_SIZE,
-                            CHAR_PROP_NOTIFY,
-                            ATTR_PERMISSION_NONE,
-                            GATT_DONT_NOTIFY_EVENTS,
-                            16,
-                            1,
-                            &ecg_char_handle);
-    if (ret != BLE_STATUS_SUCCESS) { ble_init_err = ret; return; }
+    ble_init_err = aci_gatt_add_char(service, UUID_TYPE_128, &cu, 20, CHAR_PROP_NOTIFY,
+                    ATTR_PERMISSION_NONE, GATT_NOTIFY_ATTRIBUTE_WRITE, 16, 1, &characteristic);
+    if (ble_init_err) return;
+    ble_init_step = 7;
+    uint8_t empty_scan[31] = {0};
+    ble_init_err = hci_le_set_scan_response_data(0, empty_scan);
+    if (ble_init_err) return;
+    stack_ready = 1;
+    ble_init_err = advertise();
+    advertise_pending = ble_init_err != 0;
+    if (!advertise_pending) ble_init_step = 8;
+}
 
-    Start_Advertising();
+static void pack_sample(uint8_t *dst, const sample_t *s)
+{
+    for (unsigned c = 0; c < 3; ++c)
+    {
+        uint32_t value = (uint32_t)s->channels[c];
+        dst[3*c] = (uint8_t)value;
+        dst[3*c+1] = (uint8_t)(value >> 8);
+        dst[3*c+2] = (uint8_t)(value >> 16);
+    }
 }
 
 void BLE_ECG_Process(void)
 {
+    if (!stack_ready) return;
+    BLE_TransportPoll();
     hci_user_evt_proc();
-
-    if (conn_handle == 0xFFFF || !notify_enabled)
+    if (advertise_pending && HAL_GetTick() - last_adv_attempt >= 250)
     {
+        ble_init_err = advertise();
+        advertise_pending = ble_init_err != 0;
+        if (!advertise_pending) ble_init_step = 8;
+    }
+    if (interval_pending)
+    {
+        interval_pending = 0;
+        aci_l2cap_connection_parameter_update_req(ble_connection, 6, 12, 0, 200);
+    }
+    if (!ble_subscribed || (tx_delayed && HAL_GetTick() - tx_attempt < 3)) return;
+    uint32_t first = tail, second = (first + 1U) & QUEUE_MASK;
+    if (first == head || second == head) return;
+
+    const sample_t *a = &queue[first], *b = &queue[second];
+    uint8_t payload[20] = {(uint8_t)a->index, (uint8_t)(a->index >> 8)};
+    unsigned count = 1;
+    pack_sample(payload + 2, a);
+    if (b->index == a->index + 1U)
+    {
+        pack_sample(payload + 11, b);
+        count = 2;
+    }
+    ble_last_tx_status = aci_gatt_update_char_value(service, characteristic, 0,
+                                                    2U + 9U*count, payload);
+    if (ble_last_tx_status == BLE_STATUS_INSUFFICIENT_RESOURCES)
+    {
+        ble_tx_retries++;
+        tx_attempt = HAL_GetTick();
+        tx_delayed = 1;
         return;
     }
-
-    if (!tx_pkt_ready)
-    {
-        uint32_t available = (ring_head - ring_tail) & (BLE_RING_SIZE - 1U);
-        if (available < SAMPLES_PER_PACKET)
-        {
-            return;
-        }
-
-        tx_pkt.seq      = pkt_seq++;
-        tx_pkt.count    = SAMPLES_PER_PACKET;
-        tx_pkt.reserved = 0;
-
-        for (uint32_t i = 0; i < SAMPLES_PER_PACKET; i++)
-        {
-            tx_pkt.samples[i] = ring_buf[ring_tail];
-            ring_tail = (ring_tail + 1U) & (BLE_RING_SIZE - 1U);
-        }
-
-        tx_pkt_ready = 1U;
-    }
-
-    if (tx_pkt_ready)
-    {
-        tBleStatus ret = aci_gatt_update_char_value(
-            service_handle,
-            ecg_char_handle,
-            0,
-            ECG_PACKET_SIZE,
-            (uint8_t *)&tx_pkt
-        );
-
-        if (ret == BLE_STATUS_SUCCESS)
-        {
-            tx_pkt_ready = 0U;
-            ble_pkts_sent++;
-        }
-        else if (ret == BLE_STATUS_INSUFFICIENT_RESOURCES)
-        {
-            ble_tx_retries++;
-        }
-        else
-        {
-            tx_pkt_ready = 0U;
-            ble_pkts_dropped++;
-        }
-    }
+    tx_delayed = 0;
+    if (ble_last_tx_status == BLE_STATUS_SUCCESS) ble_pkts_sent++;
+    else ble_tx_drops += count;
+    tail = (first + count) & QUEUE_MASK;
 }
-
-void hci_le_connection_complete_event(uint8_t Status,
-                                      uint16_t Connection_Handle,
-                                      uint8_t Role,
-                                      uint8_t Peer_Address_Type,
-                                      uint8_t Peer_Address[6],
-                                      uint16_t Conn_Interval,
-                                      uint16_t Conn_Latency,
-                                      uint16_t Supervision_Timeout,
-                                      uint8_t Master_Clock_Accuracy)
-{
-    (void)Role; (void)Peer_Address_Type; (void)Peer_Address;
-    (void)Conn_Interval; (void)Conn_Latency; (void)Supervision_Timeout;
-    (void)Master_Clock_Accuracy;
-
-    if (Status == 0x00)
-    {
-        conn_handle = Connection_Handle;
-        adv_active  = 0U;
-
-        aci_gatt_exchange_config(conn_handle);
-        aci_l2cap_connection_parameter_update_req(conn_handle, 0x0006, 0x000C, 0, 0x00C8);
-    }
-}
-
-void hci_disconnection_complete_event(uint8_t Status,
-                                         uint16_t Connection_Handle,
-                                         uint8_t Reason)
-{
-    (void)Status; (void)Connection_Handle; (void)Reason;
-
-    conn_handle    = 0xFFFF;
-    notify_enabled = 0U;
-    tx_pkt_ready   = 0U;
-    ring_head      = 0U;
-    ring_tail      = 0U;
-
-    Start_Advertising();
-}
-
-void aci_gatt_attribute_modified_event(uint16_t Connection_Handle,
-                                       uint16_t Attr_Handle,
-                                       uint16_t Offset,
-                                       uint16_t Attr_Data_Length,
-                                       uint8_t Attr_Data[])
-{
-    (void)Connection_Handle; (void)Offset;
-
-    if ((Attr_Handle == (ecg_char_handle + 2U)) && (Attr_Data_Length == 2U))
-    {
-        if (Attr_Data[0] & 0x01U)
-        {
-            ring_head      = 0U;
-            ring_tail      = 0U;
-            tx_pkt_ready   = 0U;
-            pkt_seq        = 0U;
-            notify_enabled = 1U;
-        }
-        else
-        {
-            notify_enabled = 0U;
-        }
-    }
-}
-
-#endif /* BLE_ECG_ENABLED */
