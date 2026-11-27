@@ -9,10 +9,8 @@
 /* USER CODE BEGIN PD */
 _Static_assert(ADS1293_DRDYB_Pin == GPIO_PIN_0,
                "Expected ADS1293 DRDYB on PB0");
-
 _Static_assert(ADS1293_ALARM_Pin == GPIO_PIN_1,
                "Expected ADS1293 ALARM on PB1");
-
 _Static_assert(BLUENRG_CS_Pin == GPIO_PIN_10,
                "Expected BlueNRG chip select on PA10");
 /* USER CODE END PD */
@@ -23,14 +21,16 @@ SPI_HandleTypeDef hspi1;
 volatile int32_t ECG_Lead_I;
 volatile int32_t ECG_Lead_II;
 volatile int32_t ECG_Lead_V1;
-
 volatile uint32_t drdy_count;
 volatile uint32_t samples_ok;
 volatile uint32_t spi_errors;
 volatile uint32_t adc_restarts;
 volatile uint8_t adc_ready;
 
+extern volatile uint32_t ble_pkts_sent;
+
 static volatile uint32_t last_sample_ms;
+static volatile uint8_t ble_irq_seen;
 /* USER CODE END PV */
 
 void SystemClock_Config(void);
@@ -40,6 +40,7 @@ static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
 static void start_adc(void);
 static void check_adc_timeout(void);
+static void sleep_if_idle(uint32_t drdy_before, uint32_t packets_before);
 /* USER CODE END PFP */
 
 int main(void)
@@ -51,6 +52,7 @@ int main(void)
     MX_SPI1_Init();
 
     /* USER CODE BEGIN 2 */
+    SCB->SCR &= ~(SCB_SCR_SLEEPDEEP_Msk | SCB_SCR_SLEEPONEXIT_Msk);
     BLE_ECG_Init();
     start_adc();
     /* USER CODE END 2 */
@@ -61,8 +63,14 @@ int main(void)
         /* USER CODE END WHILE */
 
         /* USER CODE BEGIN 3 */
+        ble_irq_seen = 0U;
+
+        uint32_t drdy_before = drdy_count;
+        uint32_t packets_before = ble_pkts_sent;
+
         BLE_ECG_Process();
         check_adc_timeout();
+        sleep_if_idle(drdy_before, packets_before);
     }
     /* USER CODE END 3 */
 }
@@ -92,7 +100,6 @@ void SystemClock_Config(void)
                     | RCC_CLOCKTYPE_PCLK1
                     | RCC_CLOCKTYPE_PCLK2
                     | RCC_CLOCKTYPE_PCLK3;
-
     clock.SYSCLKSource = RCC_SYSCLKSOURCE_HSE;
     clock.AHBCLKDivider = RCC_SYSCLK_DIV1;
     clock.APB1CLKDivider = RCC_HCLK_DIV1;
@@ -125,7 +132,8 @@ static void MX_SPI1_Init(void)
     hspi1.Init.NSSPolarity = SPI_NSS_POLARITY_LOW;
     hspi1.Init.FifoThreshold = SPI_FIFO_THRESHOLD_01DATA;
     hspi1.Init.MasterSSIdleness = SPI_MASTER_SS_IDLENESS_00CYCLE;
-    hspi1.Init.MasterInterDataIdleness = SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
+    hspi1.Init.MasterInterDataIdleness =
+        SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
     hspi1.Init.MasterReceiverAutoSusp = SPI_MASTER_RX_AUTOSUSP_DISABLE;
     hspi1.Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_DISABLE;
     hspi1.Init.IOSwap = SPI_IO_SWAP_DISABLE;
@@ -246,6 +254,23 @@ static void check_adc_timeout(void)
     }
 }
 
+static void sleep_if_idle(uint32_t drdy_before, uint32_t packets_before)
+{
+    uint32_t irq_state = __get_PRIMASK();
+    __disable_irq();
+
+    if (ble_irq_seen == 0U &&
+        drdy_count == drdy_before &&
+        ble_pkts_sent == packets_before)
+    {
+        __DSB();
+        __WFI();
+        __ISB();
+    }
+
+    __set_PRIMASK(irq_state);
+}
+
 void HAL_GPIO_EXTI_Falling_Callback(uint16_t pin)
 {
     if (pin != ADS1293_DRDYB_Pin || adc_ready == 0U)
@@ -278,6 +303,7 @@ void HAL_GPIO_EXTI_Rising_Callback(uint16_t pin)
 {
     if (pin == BLUENRG_IRQ_Pin)
     {
+        ble_irq_seen = 1U;
         hci_tl_lowlevel_isr();
     }
 }
